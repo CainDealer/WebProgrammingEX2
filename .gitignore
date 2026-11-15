@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+target/
+.vscode/
+.classpath
+.project
+.settings/
+*.war
