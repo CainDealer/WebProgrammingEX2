@@ -68,7 +68,16 @@ public class RegisterController extends HttpServlet {
 
         boolean isSuccess = service.register(username, password, email, fullname, phone);
         if (isSuccess) {
-            resp.sendRedirect(req.getContextPath() + "/login");
+            HttpSession session = req.getSession(true);
+            session.setAttribute("pendingUsername", username);
+            session.setAttribute("otpAttempts", 0);
+            session.setAttribute("lastOtpSent", System.currentTimeMillis());
+
+            boolean sent = service.sendOtp(username);
+            session.setAttribute("flash", sent
+                    ? "Mã OTP đã được gửi tới email " + email + ". Vui lòng kiểm tra hộp thư (cả mục Spam)."
+                    : "Không gửi được email. Hãy bấm \"Gửi lại mã\".");
+            resp.sendRedirect(req.getContextPath() + "/verify");
         } else {
             alertMsg = "System error!";
             req.setAttribute("alert", alertMsg);
