@@ -9,7 +9,9 @@
 <body>
 <form action="${pageContext.request.contextPath}/login" method="post">
     <h2>Đăng Nhập Vào Hệ Thống</h2>
-
+    <c:if test="${param.activated == '1'}">
+        <p style="color:green">Kích hoạt thành công! Bạn có thể đăng nhập.</p>
+    </c:if>
     <c:if test="${alert != null}">
         <h3 style="color:red">${alert}</h3>
     </c:if>
