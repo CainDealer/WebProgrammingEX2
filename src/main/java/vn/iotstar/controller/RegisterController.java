@@ -43,6 +43,12 @@ public class RegisterController extends HttpServlet {
         UserService service = new UserServiceImpl();
         String alertMsg = "";
 
+        if (password.length() < 6) {
+            req.setAttribute("alert", "Mật khẩu phải có ít nhất 6 ký tự!");
+            req.getRequestDispatcher(Constant.Path.REGISTER).forward(req, resp);
+            return;
+        }
+
         if (username == null || username.trim().isEmpty()
                 || password == null || password.isEmpty()
                 || email == null || email.trim().isEmpty()) {
