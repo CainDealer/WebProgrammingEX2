@@ -47,8 +47,8 @@ public class User implements Serializable {
     @Column(name = "createddate")
     private Date createdDate;
 
-      @Column(name = "status")
-    private int status;       
+    @Column(name = "status")
+    private int status;
 
     @Column(name = "code")
     private String code;
@@ -56,6 +56,19 @@ public class User implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "otpexpired")
     private Date otpExpired;
+
+    @Column(name = "resetcode")
+    private String resetCode;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "resetexpired")
+    private Date resetExpired;
+
+    @Column(name = "resetattempts")
+    private int resetAttempts;
+
+    @Column(name = "remembertoken")
+    private String rememberToken;
 
     public User() {}
 
@@ -106,4 +119,16 @@ public class User implements Serializable {
 
     public Date getOtpExpired() { return otpExpired; }
     public void setOtpExpired(Date otpExpired) { this.otpExpired = otpExpired; }
+
+    public String getResetCode() { return resetCode; }
+    public void setResetCode(String resetCode) { this.resetCode = resetCode; }
+
+    public Date getResetExpired() { return resetExpired; }
+    public void setResetExpired(Date resetExpired) { this.resetExpired = resetExpired; }
+
+    public int getResetAttempts() { return resetAttempts; }
+    public void setResetAttempts(int resetAttempts) { this.resetAttempts = resetAttempts; }
+
+    public String getRememberToken() { return rememberToken; }
+    public void setRememberToken(String rememberToken) { this.rememberToken = rememberToken; }
 }
