@@ -14,19 +14,17 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User get(String username) {
-        EntityManager em = JPAConfig.getEntityManager();
-        try {
-            TypedQuery<User> query = em.createQuery(
-                    "SELECT u FROM User u WHERE u.userName = :username", User.class);
-            query.setParameter("username", username);
-            List<User> list = query.getResultList();
-            return list.isEmpty() ? null : list.get(0);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        } finally {
-            em.close();
-        }
+        return findOne("userName", username);
+    }
+
+    @Override
+    public User getByEmail(String email) {
+        return findOne("email", email);
+    }
+
+    @Override
+    public User getByRememberToken(String hashedToken) {
+        return findOne("rememberToken", hashedToken);
     }
 
     @Override
@@ -35,43 +33,11 @@ public class UserDaoImpl implements UserDao {
         EntityTransaction trans = em.getTransaction();
         try {
             trans.begin();
-            em.persist(user);      
+            em.persist(user);
             trans.commit();
         } catch (Exception e) {
             e.printStackTrace();
-            if (trans.isActive()) {
-                trans.rollback(); 
-            }
-        } finally {
-            em.close();
-        }
-    }
-
-    @Override
-    public boolean checkExistEmail(String email) {
-        return checkExist("email", email);
-    }
-
-    @Override
-    public boolean checkExistUsername(String username) {
-        return checkExist("userName", username);
-    }
-
-    @Override
-    public boolean checkExistPhone(String phone) {
-        return checkExist("phone", phone);
-    }
-
-    private boolean checkExist(String field, String value) {
-        EntityManager em = JPAConfig.getEntityManager();
-        try {
-            TypedQuery<Long> query = em.createQuery(
-                    "SELECT COUNT(u) FROM User u WHERE u." + field + " = :value", Long.class);
-            query.setParameter("value", value);
-            return query.getSingleResult() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            if (trans.isActive()) trans.rollback();
         } finally {
             em.close();
         }
@@ -87,9 +53,55 @@ public class UserDaoImpl implements UserDao {
             trans.commit();
         } catch (Exception e) {
             e.printStackTrace();
-            if (trans.isActive()) {
-                trans.rollback();
-            }
+            if (trans.isActive()) trans.rollback();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public boolean checkExistEmail(String email) {
+        return count("email", email) > 0;
+    }
+
+    @Override
+    public boolean checkExistUsername(String username) {
+        return count("userName", username) > 0;
+    }
+
+    @Override
+    public boolean checkExistPhone(String phone) {
+        return count("phone", phone) > 0;
+    }
+
+    private User findOne(String field, String value) {
+        if (value == null) return null;
+        EntityManager em = JPAConfig.getEntityManager();
+        try {
+            TypedQuery<User> q = em.createQuery(
+                    "SELECT u FROM User u WHERE u." + field + " = :value", User.class);
+            q.setParameter("value", value);
+            q.setMaxResults(1);
+            List<User> list = q.getResultList();
+            return list.isEmpty() ? null : list.get(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            em.close();
+        }
+    }
+
+    private long count(String field, String value) {
+        EntityManager em = JPAConfig.getEntityManager();
+        try {
+            TypedQuery<Long> q = em.createQuery(
+                    "SELECT COUNT(u) FROM User u WHERE u." + field + " = :value", Long.class);
+            q.setParameter("value", value);
+            return q.getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
         } finally {
             em.close();
         }
