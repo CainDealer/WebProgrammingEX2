@@ -1,5 +1,5 @@
 package vn.iotstar.util;
 
 public enum OtpResult {
-    OK, INVALID, EXPIRED, NOT_FOUND
+    OK, INVALID, EXPIRED, NOT_FOUND, LOCKED
 }
