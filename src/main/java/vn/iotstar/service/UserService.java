@@ -1,6 +1,7 @@
 package vn.iotstar.service;
 
 import vn.iotstar.model.User;
+import vn.iotstar.util.OtpResult;
 
 public interface UserService {
     User login(String username, String password);
@@ -11,4 +12,7 @@ public interface UserService {
     boolean checkExistEmail(String email);
     boolean checkExistUsername(String username);
     boolean checkExistPhone(String phone);
+
+    boolean sendOtp(String username);
+    OtpResult activate(String username, String otp);
 }
