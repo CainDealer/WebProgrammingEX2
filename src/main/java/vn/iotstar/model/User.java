@@ -47,6 +47,16 @@ public class User implements Serializable {
     @Column(name = "createddate")
     private Date createdDate;
 
+      @Column(name = "status")
+    private int status;       
+
+    @Column(name = "code")
+    private String code;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "otpexpired")
+    private Date otpExpired;
+
     public User() {}
 
     public User(String email, String userName, String fullName, String passWord,
@@ -87,4 +97,13 @@ public class User implements Serializable {
 
     public Date getCreatedDate() { return createdDate; }
     public void setCreatedDate(Date createdDate) { this.createdDate = createdDate; }
+
+    public int getStatus() { return status; }
+    public void setStatus(int status) { this.status = status; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+
+    public Date getOtpExpired() { return otpExpired; }
+    public void setOtpExpired(Date otpExpired) { this.otpExpired = otpExpired; }
 }
