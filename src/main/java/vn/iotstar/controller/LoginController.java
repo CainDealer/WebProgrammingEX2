@@ -19,6 +19,8 @@ import vn.iotstar.util.Constant;
 @WebServlet(urlPatterns = "/login")
 public class LoginController extends HttpServlet {
 
+    private static final int REMEMBER_DAYS = 7;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -32,13 +34,14 @@ public class LoginController extends HttpServlet {
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(Constant.COOKIE_REMEMBER)) {
-                    User user = new UserServiceImpl().get(cookie.getValue());
-                    if (user != null) {
+                    User user = new UserServiceImpl().getByRememberToken(cookie.getValue());
+                    if (user != null && user.getStatus() == 1) {
                         session = req.getSession(true);
                         session.setAttribute("account", user);
                         resp.sendRedirect(req.getContextPath() + "/waiting");
                         return;
                     }
+                    deleteRememberCookie(req, resp);
                 }
             }
         }
@@ -55,42 +58,63 @@ public class LoginController extends HttpServlet {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
         boolean isRememberMe = "on".equals(req.getParameter("remember"));
-        String alertMsg = "";
 
-        if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-            alertMsg = "Tài khoản hoặc mật khẩu không được rỗng";
-            req.setAttribute("alert", alertMsg);
+        if (username == null || password == null || username.trim().isEmpty() || password.isEmpty()) {
+            req.setAttribute("alert", "Tài khoản hoặc mật khẩu không được rỗng");
             req.getRequestDispatcher(Constant.Path.LOGIN).forward(req, resp);
             return;
         }
 
         UserService service = new UserServiceImpl();
-        User user = service.login(username, password);
-        if (user != null) {
-            if (user.getStatus() == 0) {
-                HttpSession pending = req.getSession(true);
-                pending.setAttribute("pendingUsername", username);
-                pending.setAttribute("otpAttempts", 0);
-                pending.setAttribute("flash", "Tài khoản chưa được kích hoạt. Nhập mã OTP đã gửi qua email, hoặc bấm \"Gửi lại mã\".");
-                resp.sendRedirect(req.getContextPath() + "/verify");
-                return;
-            }
-            HttpSession session = req.getSession(true);
-            session.setAttribute("account", user);
-            if (isRememberMe) {
-                saveRememberMe(resp, username);
-            }
-            resp.sendRedirect(req.getContextPath() + "/waiting");
-        } else {
-            alertMsg = "Tài khoản hoặc mật khẩu không đúng";
-            req.setAttribute("alert", alertMsg);
+        User user = service.login(username.trim(), password);
+
+        if (user == null) {
+            req.setAttribute("alert", "Tài khoản hoặc mật khẩu không đúng");
             req.getRequestDispatcher(Constant.Path.LOGIN).forward(req, resp);
+            return;
         }
+
+        if (user.getStatus() == 0) {
+            HttpSession pending = req.getSession(true);
+            pending.setAttribute("pendingUsername", user.getUserName());
+            pending.setAttribute("otpAttempts", 0);
+            pending.setAttribute("flash", "Tài khoản chưa được kích hoạt. Nhập mã OTP đã gửi qua email, hoặc bấm \"Gửi lại mã\".");
+            resp.sendRedirect(req.getContextPath() + "/verify");
+            return;
+        }
+
+        HttpSession session = req.getSession(true);
+        req.changeSessionId();
+        session.setAttribute("account", user);
+
+        if (isRememberMe) {
+            String token = service.createRememberToken(user.getUserName());
+            if (token != null) {
+                addRememberCookie(req, resp, token);
+            }
+        }
+        resp.sendRedirect(req.getContextPath() + "/waiting");
     }
 
-    private void saveRememberMe(HttpServletResponse response, String username) {
-        Cookie cookie = new Cookie(Constant.COOKIE_REMEMBER, username);
-        cookie.setMaxAge(30 * 60);
-        response.addCookie(cookie);
+    private void addRememberCookie(HttpServletRequest req, HttpServletResponse resp, String token) {
+        Cookie cookie = new Cookie(Constant.COOKIE_REMEMBER, token);
+        cookie.setMaxAge(REMEMBER_DAYS * 24 * 60 * 60);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(req.isSecure());
+        cookie.setPath(cookiePath(req));
+        resp.addCookie(cookie);
+    }
+
+    private void deleteRememberCookie(HttpServletRequest req, HttpServletResponse resp) {
+        Cookie cookie = new Cookie(Constant.COOKIE_REMEMBER, "");
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        cookie.setPath(cookiePath(req));
+        resp.addCookie(cookie);
+    }
+
+    private String cookiePath(HttpServletRequest req) {
+        String p = req.getContextPath();
+        return (p == null || p.isEmpty()) ? "/" : p;
     }
 }
