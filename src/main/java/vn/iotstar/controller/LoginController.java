@@ -67,6 +67,14 @@ public class LoginController extends HttpServlet {
         UserService service = new UserServiceImpl();
         User user = service.login(username, password);
         if (user != null) {
+            if (user.getStatus() == 0) {
+                HttpSession pending = req.getSession(true);
+                pending.setAttribute("pendingUsername", username);
+                pending.setAttribute("otpAttempts", 0);
+                pending.setAttribute("flash", "Tài khoản chưa được kích hoạt. Nhập mã OTP đã gửi qua email, hoặc bấm \"Gửi lại mã\".");
+                resp.sendRedirect(req.getContextPath() + "/verify");
+                return;
+            }
             HttpSession session = req.getSession(true);
             session.setAttribute("account", user);
             if (isRememberMe) {
