@@ -2,6 +2,9 @@ package vn.iotstar.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.OneToMany;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -70,6 +73,9 @@ public class User implements Serializable {
     @Column(name = "remembertoken")
     private String rememberToken;
 
+    @OneToMany(mappedBy = "user")
+    private List<Video> videos = new ArrayList<>();
+
     public User() {}
 
     public User(String email, String userName, String fullName, String passWord,
@@ -131,4 +137,7 @@ public class User implements Serializable {
 
     public String getRememberToken() { return rememberToken; }
     public void setRememberToken(String rememberToken) { this.rememberToken = rememberToken; }
+
+    public List<Video> getVideos() { return videos; }
+    public void setVideos(List<Video> videos) { this.videos = videos; }
 }
