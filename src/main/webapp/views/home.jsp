@@ -2,13 +2,11 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>Trang chủ</title></head>
+<head><title>Trang chủ</title></head>
 <body>
-<jsp:include page="/common/topbar.jsp"/>
-<h1>Trang chủ</h1>
-<h2>10 video mới nhất</h2>
+<h1 class="h3 mb-4">10 video mới nhất</h1>
 <c:choose>
-  <c:when test="${empty videos}"><p>Chưa có video nào.</p></c:when>
+  <c:when test="${empty videos}"><div class="alert alert-info">Chưa có video nào.</div></c:when>
   <c:otherwise><jsp:include page="/common/video-grid.jsp"/></c:otherwise>
 </c:choose>
 </body>

@@ -4,40 +4,39 @@
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title><c:out value="${video.title}"/></title></head>
+<head><title><c:out value="${video.title}"/></title></head>
 <body>
-<jsp:include page="/common/topbar.jsp"/>
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="ratio ratio-16x9 bg-black rounded overflow-hidden mb-3">
+      <video controls preload="metadata"
+             <c:if test="${not empty video.poster}">poster="${ctx}/media/posters/${video.poster}"</c:if>
+             src="${ctx}/media/videos/${video.filename}">
+        Trình duyệt của bạn không hỗ trợ phát video.
+      </video>
+    </div>
 
-<h1><c:out value="${video.title}"/></h1>
+    <h1 class="h4"><c:out value="${video.title}"/></h1>
+    <p class="text-muted">
+      Đăng bởi <strong><c:out value="${video.user.fullName}"/></strong> ·
+      ${video.views} lượt xem ·
+      <fmt:formatDate value="${video.createdDate}" pattern="dd/MM/yyyy HH:mm"/>
+      <c:if test="${!video.active}"> · <span class="badge text-bg-secondary">Đang ẩn</span></c:if>
+    </p>
+    <div class="card card-body mb-3" style="white-space:pre-wrap"><c:out value="${video.description}"/></div>
 
-<video controls preload="metadata" style="width:100%;max-width:900px;background:#000"
-       <c:if test="${not empty video.poster}">poster="${ctx}/media/posters/${video.poster}"</c:if>
-       src="${ctx}/media/videos/${video.filename}">
-  Trình duyệt của bạn không hỗ trợ phát video.
-</video>
-
-<p style="color:#666">
-  Đăng bởi <strong><c:out value="${video.user.fullName}"/></strong> ·
-  ${video.views} lượt xem ·
-  <fmt:formatDate value="${video.createdDate}" pattern="dd/MM/yyyy HH:mm"/>
-  <c:if test="${!video.active}"> · <em>Đang ẩn</em></c:if>
-</p>
-
-<div style="white-space:pre-wrap;max-width:900px"><c:out value="${video.description}"/></div>
-
-<c:if test="${canModify}">
-  <p>
-    <a href="${ctx}/video/edit?id=${video.id}">Sửa</a>
-    <form action="${ctx}/video/delete" method="post" style="display:inline"
-          onsubmit="return confirm('Xóa video này?')">
-      <input type="hidden" name="id" value="${video.id}">
-      <input type="hidden" name="csrf" value="${csrf}">
-      <button type="submit">Xóa</button>
-    </form>
-  </p>
-</c:if>
-
-<p><a href="${ctx}/home">« Trang chủ</a>
-   <c:if test="${sessionScope.account != null}"> | <a href="${ctx}/video">« Video của tôi</a></c:if></p>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="${ctx}/home">« Trang chủ</a>
+      <c:if test="${canModify}">
+        <a class="btn btn-outline-primary" href="${ctx}/video/edit?id=${video.id}">Sửa</a>
+        <form action="${ctx}/video/delete" method="post" onsubmit="return confirm('Xóa video này?')">
+          <input type="hidden" name="id" value="${video.id}">
+          <input type="hidden" name="csrf" value="${csrf}">
+          <button type="submit" class="btn btn-outline-danger">Xóa</button>
+        </form>
+      </c:if>
+    </div>
+  </div>
+</div>
 </body>
 </html>

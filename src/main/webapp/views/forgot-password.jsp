@@ -1,24 +1,28 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags"%>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8">
-<title>Quên mật khẩu</title>
-</head>
+<head><title>Quên mật khẩu</title></head>
 <body>
-    <h2>Quên mật khẩu</h2>
-    <p>Nhập email hoặc tên tài khoản. Chúng tôi sẽ gửi mã OTP tới email đã đăng ký.</p>
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-5">
+    <div class="card shadow-sm"><div class="card-body p-4">
+      <h2 class="h4 text-center mb-3">Quên mật khẩu</h2>
+      <p class="text-muted">Nhập email hoặc tên tài khoản. Chúng tôi sẽ gửi mã OTP tới email đã đăng ký.</p>
 
-    <c:if test="${alert != null}">
-        <p style="color:red">${alert}</p>
-    </c:if>
+      <c:if test="${not empty alert}"><div class="alert alert-danger"><c:out value="${alert}"/></div></c:if>
 
-    <form action="${pageContext.request.contextPath}/forgot-password" method="post">
-        <input type="text" name="identifier" placeholder="Email hoặc tên tài khoản" required>
-        <button type="submit">Gửi mã OTP</button>
-    </form>
-
-    <p><a href="${pageContext.request.contextPath}/login">Quay về đăng nhập</a></p>
+      <form action="${ctx}/forgot-password" method="post" class="needs-validation" novalidate>
+        <t:field name="identifier" label="Email hoặc tên tài khoản" value="${param.identifier}"
+                 error="${errors.identifier}" required="true" maxlength="100"
+                 msg="Vui lòng nhập email hoặc tên tài khoản."/>
+        <button type="submit" class="btn btn-primary w-100">Gửi mã OTP</button>
+      </form>
+      <p class="text-center mt-3 mb-0"><a href="${ctx}/login">Quay về đăng nhập</a></p>
+    </div></div>
+  </div>
+</div>
 </body>
 </html>
