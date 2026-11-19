@@ -2,6 +2,8 @@ package vn.iotstar.controller;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -41,7 +43,7 @@ public class VideoFormController extends HttpServlet {
             if (v == null) { resp.sendError(404); return; }
             if (!service.canModify(WebUtil.account(req), v)) { resp.sendError(403); return; }
         }
-        showForm(req, resp, v, edit, null);
+        showForm(req, resp, v, edit, new LinkedHashMap<>());
     }
 
     @Override
@@ -54,6 +56,8 @@ public class VideoFormController extends HttpServlet {
             resp.sendError(413, "File quá lớn (tối đa 200 MB).");
         }
     }
+
+    private static final long MAX_VIDEO = 200L * 1024 * 1024;
 
     private void handlePost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -82,26 +86,34 @@ public class VideoFormController extends HttpServlet {
         boolean hasVideo = videoPart != null && videoPart.getSize() > 0;
         boolean hasPoster = posterPart != null && posterPart.getSize() > 0;
 
-        String error = null;
-        if (title.isEmpty() || title.length() > 200) error = "Tiêu đề bắt buộc, tối đa 200 ký tự.";
-        else if (desc.length() > 4000) error = "Mô tả tối đa 4000 ký tự.";
-        else if (!edit && !hasVideo) error = "Vui lòng chọn file video.";
+        Map<String, String> errors = new LinkedHashMap<>();
+        if (title.isEmpty()) errors.put("title", "Vui lòng nhập tiêu đề.");
+        else if (title.length() > 200) errors.put("title", "Tiêu đề tối đa 200 ký tự.");
+
+        if (desc.length() > 4000) errors.put("description", "Mô tả tối đa 4000 ký tự.");
+
+        if (hasVideo) {
+            String e = UploadUtil.check(videoPart, VIDEO_EXT, "video/", MAX_VIDEO);
+            if (e != null) errors.put("video", e);
+        } else if (!edit) {
+            errors.put("video", "Vui lòng chọn file video.");
+        }
+        if (hasPoster) {
+            String e = UploadUtil.check(posterPart, IMAGE_EXT, "image/", MAX_POSTER);
+            if (e != null) errors.put("poster", e);
+        }
+        if (!errors.isEmpty()) { showForm(req, resp, v, edit, errors); return; }
 
         String newVideo = null, newPoster = null;
-        if (error == null) {
-            try {
-                if (hasVideo) newVideo = UploadUtil.save(videoPart, "videos", VIDEO_EXT, "video/");
-                if (hasPoster) {
-                    if (posterPart.getSize() > MAX_POSTER) throw new IllegalArgumentException("Ảnh bìa tối đa 5 MB.");
-                    newPoster = UploadUtil.save(posterPart, "posters", IMAGE_EXT, "image/");
-                }
-            } catch (IllegalArgumentException e) {
-                error = e.getMessage();
-                UploadUtil.delete("videos", newVideo);
-                newVideo = null;
-            }
+        try {
+            if (hasVideo) newVideo = UploadUtil.save(videoPart, "videos", VIDEO_EXT, "video/");
+            if (hasPoster) newPoster = UploadUtil.save(posterPart, "posters", IMAGE_EXT, "image/");
+        } catch (IllegalArgumentException e) {
+            UploadUtil.delete("videos", newVideo);
+            errors.put("video", e.getMessage());
+            showForm(req, resp, v, edit, errors);
+            return;
         }
-        if (error != null) { showForm(req, resp, v, edit, error); return; }
 
         String oldVideo = v.getFilename(), oldPoster = v.getPoster();
         if (newVideo != null) v.setFilename(newVideo);
@@ -115,7 +127,8 @@ public class VideoFormController extends HttpServlet {
             UploadUtil.delete("posters", newPoster);
             v.setFilename(oldVideo);
             v.setPoster(oldPoster);
-            showForm(req, resp, v, edit, "Lỗi hệ thống, vui lòng thử lại.");
+            req.setAttribute("alert", "Lỗi hệ thống, vui lòng thử lại.");
+            showForm(req, resp, v, edit, errors);
             return;
         }
         if (edit) {
@@ -125,11 +138,11 @@ public class VideoFormController extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/video?msg=saved");
     }
 
-    private void showForm(HttpServletRequest req, HttpServletResponse resp, Video v, boolean edit, String error)
-            throws ServletException, IOException {
+    private void showForm(HttpServletRequest req, HttpServletResponse resp, Video v, boolean edit,
+                          Map<String, String> errors) throws ServletException, IOException {
         req.setAttribute("video", v);
         req.setAttribute("edit", edit);
-        req.setAttribute("alert", error);
+        req.setAttribute("errors", errors);
         req.setAttribute("csrf", CsrfUtil.token(req.getSession()));
         req.getRequestDispatcher("/views/video-form.jsp").forward(req, resp);
     }

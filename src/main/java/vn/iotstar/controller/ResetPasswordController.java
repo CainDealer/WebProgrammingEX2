@@ -45,17 +45,19 @@ public class ResetPasswordController extends HttpServlet {
             return;
         }
         String identifier = (String) session.getAttribute("resetIdentifier");
-        String otp = req.getParameter("otp");
+        String otp = vn.iotstar.util.ValidationUtil.trim(req.getParameter("otp"));
         String newPassword = req.getParameter("newPassword");
         String confirm = req.getParameter("confirmPassword");
 
-        if (newPassword == null || newPassword.length() < 6) {
-            req.setAttribute("alert", "Mật khẩu mới phải có ít nhất 6 ký tự.");
-            req.getRequestDispatcher("/views/reset-password.jsp").forward(req, resp);
-            return;
+        java.util.Map<String, String> errors = new java.util.LinkedHashMap<>();
+        vn.iotstar.util.ValidationUtil.put(errors, "otp", vn.iotstar.util.ValidationUtil.checkOtp(otp));
+        vn.iotstar.util.ValidationUtil.put(errors, "newPassword", vn.iotstar.util.ValidationUtil.checkNewPassword(newPassword));
+        if (!errors.containsKey("newPassword")) {
+            vn.iotstar.util.ValidationUtil.put(errors, "confirmPassword",
+                    vn.iotstar.util.ValidationUtil.checkConfirm(newPassword, confirm));
         }
-        if (!newPassword.equals(confirm)) {
-            req.setAttribute("alert", "Mật khẩu nhập lại không khớp.");
+        if (!errors.isEmpty()) {
+            req.setAttribute("errors", errors);
             req.getRequestDispatcher("/views/reset-password.jsp").forward(req, resp);
             return;
         }
@@ -70,7 +72,7 @@ public class ResetPasswordController extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/login?reset=1");
             return;
         case INVALID:
-            req.setAttribute("alert", "Mã OTP không đúng.");
+            errors.put("otp", "Mã OTP không đúng.");
             break;
         case LOCKED:
             req.setAttribute("alert", "Bạn đã nhập sai quá nhiều lần. Hãy yêu cầu mã mới.");
@@ -78,6 +80,7 @@ public class ResetPasswordController extends HttpServlet {
         default:
             req.setAttribute("alert", "Mã OTP không hợp lệ hoặc đã hết hạn. Hãy yêu cầu mã mới.");
         }
+        req.setAttribute("errors", errors);
         req.getRequestDispatcher("/views/reset-password.jsp").forward(req, resp);
     }
 }

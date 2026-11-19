@@ -1,6 +1,8 @@
 package vn.iotstar.controller;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import vn.iotstar.service.UserService;
 import vn.iotstar.service.impl.UserServiceImpl;
 import vn.iotstar.util.Constant;
+import vn.iotstar.util.ValidationUtil;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = "/register")
@@ -31,63 +34,53 @@ public class RegisterController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        resp.setCharacterEncoding("UTF-8");
         req.setCharacterEncoding("UTF-8");
+        resp.setCharacterEncoding("UTF-8");
 
-        String username = req.getParameter("username");
-        String password = req.getParameter("password");
-        String email = req.getParameter("email");
-        String fullname = req.getParameter("fullname");
-        String phone = req.getParameter("phone");
+        String username = ValidationUtil.trim(req.getParameter("username"));
+        String fullname = ValidationUtil.trim(req.getParameter("fullname"));
+        String email = ValidationUtil.trim(req.getParameter("email")).toLowerCase();
+        String phone = ValidationUtil.trim(req.getParameter("phone"));
+        String password = req.getParameter("password") == null ? "" : req.getParameter("password");
+        String confirm = req.getParameter("confirmPassword");
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        ValidationUtil.put(errors, "username", ValidationUtil.checkUsername(username));
+        ValidationUtil.put(errors, "fullname", ValidationUtil.checkFullname(fullname));
+        ValidationUtil.put(errors, "email", ValidationUtil.checkEmail(email));
+        ValidationUtil.put(errors, "phone", ValidationUtil.checkPhone(phone));
+        ValidationUtil.put(errors, "password", ValidationUtil.checkNewPassword(password));
+        if (!errors.containsKey("password")) {
+            ValidationUtil.put(errors, "confirmPassword", ValidationUtil.checkConfirm(password, confirm));
+        }
 
         UserService service = new UserServiceImpl();
-        String alertMsg = "";
+        if (!errors.containsKey("username") && service.checkExistUsername(username))
+            errors.put("username", "Tên tài khoản đã được sử dụng.");
+        if (!errors.containsKey("email") && service.checkExistEmail(email))
+            errors.put("email", "Email đã được đăng ký.");
+        if (!errors.containsKey("phone") && service.checkExistPhone(phone))
+            errors.put("phone", "Số điện thoại đã được đăng ký.");
 
-        if (password.length() < 6) {
-            req.setAttribute("alert", "Mật khẩu phải có ít nhất 6 ký tự!");
+        if (errors.isEmpty() && !service.register(username, password, email, fullname, phone)) {
+            errors.put("username", "Tên tài khoản đã được sử dụng."); 
+        }
+
+        if (!errors.isEmpty()) {
+            req.setAttribute("errors", errors);
             req.getRequestDispatcher(Constant.Path.REGISTER).forward(req, resp);
             return;
         }
 
-        if (username == null || username.trim().isEmpty()
-                || password == null || password.isEmpty()
-                || email == null || email.trim().isEmpty()) {
-            alertMsg = "Tài khoản, mật khẩu và email không được rỗng!";
-            req.setAttribute("alert", alertMsg);
-            req.getRequestDispatcher(Constant.Path.REGISTER).forward(req, resp);
-            return;
-        }
+        HttpSession session = req.getSession(true);
+        session.setAttribute("pendingUsername", username);
+        session.setAttribute("otpAttempts", 0);
+        session.setAttribute("lastOtpSent", System.currentTimeMillis());
 
-        if (service.checkExistEmail(email)) {
-            alertMsg = "Email đã tồn tại!";
-            req.setAttribute("alert", alertMsg);
-            req.getRequestDispatcher(Constant.Path.REGISTER).forward(req, resp);
-            return;
-        }
-
-        if (service.checkExistUsername(username)) {
-            alertMsg = "Tài khoản đã tồn tại!";
-            req.setAttribute("alert", alertMsg);
-            req.getRequestDispatcher(Constant.Path.REGISTER).forward(req, resp);
-            return;
-        }
-
-        boolean isSuccess = service.register(username, password, email, fullname, phone);
-        if (isSuccess) {
-            HttpSession session = req.getSession(true);
-            session.setAttribute("pendingUsername", username);
-            session.setAttribute("otpAttempts", 0);
-            session.setAttribute("lastOtpSent", System.currentTimeMillis());
-
-            boolean sent = service.sendOtp(username);
-            session.setAttribute("flash", sent
-                    ? "Mã OTP đã được gửi tới email " + email + ". Vui lòng kiểm tra hộp thư (cả mục Spam)."
-                    : "Không gửi được email. Hãy bấm \"Gửi lại mã\".");
-            resp.sendRedirect(req.getContextPath() + "/verify");
-        } else {
-            alertMsg = "System error!";
-            req.setAttribute("alert", alertMsg);
-            req.getRequestDispatcher(Constant.Path.REGISTER).forward(req, resp);
-        }
+        boolean sent = service.sendOtp(username);
+        session.setAttribute("flash", sent
+                ? "Mã OTP đã được gửi tới email " + email + ". Vui lòng kiểm tra hộp thư (cả mục Spam)."
+                : "Không gửi được email. Hãy bấm \"Gửi lại mã\".");
+        resp.sendRedirect(req.getContextPath() + "/verify");
     }
 }

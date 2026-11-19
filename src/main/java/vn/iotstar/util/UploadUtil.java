@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.TreeSet;
 
 import jakarta.servlet.http.Part;
 
@@ -42,6 +43,17 @@ public class UploadUtil {
             Files.copy(in, dir(sub).resolve(name));
         }
         return name;
+    }
+
+    public static String check(Part part, Set<String> allowedExt, String mimePrefix, long maxBytes) {
+        if (part.getSize() > maxBytes)
+            return "File quá lớn (tối đa " + (maxBytes / 1024 / 1024) + " MB).";
+        if (!allowedExt.contains(ext(part.getSubmittedFileName())))
+            return "Định dạng không được hỗ trợ. Chỉ chấp nhận: " + String.join(", ", new TreeSet<>(allowedExt)) + ".";
+        String ct = part.getContentType();
+        if (ct == null || !ct.toLowerCase(Locale.ROOT).startsWith(mimePrefix))
+            return "File không đúng loại yêu cầu.";
+        return null;
     }
 
     public static void delete(String sub, String name) {

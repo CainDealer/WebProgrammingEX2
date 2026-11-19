@@ -46,7 +46,15 @@ public class VerifyController extends HttpServlet {
             return;
         }
         String username = (String) session.getAttribute("pendingUsername");
-        String otp = req.getParameter("otp");
+        String otp = vn.iotstar.util.ValidationUtil.trim(req.getParameter("otp"));
+        String otpErr = vn.iotstar.util.ValidationUtil.checkOtp(otp);
+        if (otpErr != null) {
+            java.util.Map<String, String> errors = new java.util.LinkedHashMap<>();
+            errors.put("otp", otpErr);
+            req.setAttribute("errors", errors);
+            req.getRequestDispatcher("/views/verify.jsp").forward(req, resp);
+            return;
+        }
 
         int attempts = session.getAttribute("otpAttempts") == null
                 ? 0 : (Integer) session.getAttribute("otpAttempts");

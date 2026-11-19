@@ -28,13 +28,15 @@ public class ForgotPasswordController extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
 
-        String identifier = req.getParameter("identifier");
-        if (identifier == null || identifier.trim().isEmpty()) {
-            req.setAttribute("alert", "Vui lòng nhập email hoặc tên tài khoản.");
+        String identifier = vn.iotstar.util.ValidationUtil.trim(req.getParameter("identifier"));
+        String err = vn.iotstar.util.ValidationUtil.checkIdentifier(identifier);
+        if (err != null) {
+            java.util.Map<String, String> errors = new java.util.LinkedHashMap<>();
+            errors.put("identifier", err);
+            req.setAttribute("errors", errors);
             req.getRequestDispatcher("/views/forgot-password.jsp").forward(req, resp);
             return;
         }
-        identifier = identifier.trim();
 
         HttpSession session = req.getSession(true);
 
@@ -50,7 +52,6 @@ public class ForgotPasswordController extends HttpServlet {
         new UserServiceImpl().sendResetOtp(identifier);
         session.setAttribute("lastResetSent", System.currentTimeMillis());
         session.setAttribute("resetIdentifier", identifier);
-
         session.setAttribute("flash", "Nếu tài khoản tồn tại, mã OTP đã được gửi tới email đăng ký. "
                 + "Vui lòng kiểm tra hộp thư (cả mục Spam).");
         resp.sendRedirect(req.getContextPath() + "/reset-password");

@@ -59,8 +59,15 @@ public class LoginController extends HttpServlet {
         String password = req.getParameter("password");
         boolean isRememberMe = "on".equals(req.getParameter("remember"));
 
-        if (username == null || password == null || username.trim().isEmpty() || password.isEmpty()) {
-            req.setAttribute("alert", "Tài khoản hoặc mật khẩu không được rỗng");
+        java.util.Map<String, String> errors = new java.util.LinkedHashMap<>();
+        username = vn.iotstar.util.ValidationUtil.trim(username);
+        if (username.isEmpty()) errors.put("username", "Vui lòng nhập tài khoản.");
+        else if (username.length() > 50) errors.put("username", "Tài khoản tối đa 50 ký tự.");
+        if (password == null || password.isEmpty()) errors.put("password", "Vui lòng nhập mật khẩu.");
+        else if (password.length() > 64) errors.put("password", "Mật khẩu tối đa 64 ký tự.");
+
+        if (!errors.isEmpty()) {
+            req.setAttribute("errors", errors);
             req.getRequestDispatcher(Constant.Path.LOGIN).forward(req, resp);
             return;
         }
