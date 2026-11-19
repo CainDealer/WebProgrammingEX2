@@ -1,0 +1,5 @@
+.vthumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: #222; }
+.vcard { transition: box-shadow .15s; }
+.vcard:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); }
+.vcard .card-title a { text-decoration: none; color: inherit; }
+.vcard .card-title a:hover { color: #0d6efd; }
