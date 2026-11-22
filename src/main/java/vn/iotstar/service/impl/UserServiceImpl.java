@@ -13,6 +13,7 @@ import vn.iotstar.util.OtpResult;
 import vn.iotstar.util.OtpUtil;
 import vn.iotstar.util.PasswordUtil;
 import vn.iotstar.util.TokenUtil;
+import vn.iotstar.util.EmailChangeResult;
 
 public class UserServiceImpl implements UserService {
     private static final long OTP_LIFETIME_MS = 5 * 60 * 1000L;   // 5 mins
@@ -189,5 +190,115 @@ public class UserServiceImpl implements UserService {
         return MessageDigest.isEqual(
                 a.getBytes(StandardCharsets.UTF_8),
                 input.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public User getByEmail(String email) { return userDao.getByEmail(email); }
+
+    @Override
+    public User getByPhone(String phone) { return userDao.getByPhone(phone); }
+
+    
+    @Override
+    public User updateProfile(String username, String fullname, String phone,
+                              String avatarUrl, String avatarPublicId) {
+        User u = userDao.get(username);
+        if (u == null) return null;
+        u.setFullName(fullname);
+        u.setPhone(phone);
+        if (avatarUrl != null) {
+            u.setAvatar(avatarUrl);
+            u.setAvatarPublicId(avatarPublicId);
+        }
+        userDao.update(u);
+        return u;
+    }
+
+    @Override
+    public EmailChangeResult requestEmailChange(String username, String newEmail) {
+        User u = userDao.get(username);
+        if (u == null) return EmailChangeResult.NOT_FOUND;
+        String e = newEmail.trim().toLowerCase();
+        if (e.equalsIgnoreCase(u.getEmail())) return EmailChangeResult.SAME;
+        User other = userDao.getByEmail(e);
+        if (other != null && other.getId() != u.getId()) return EmailChangeResult.EXISTS;
+        return issueEmailOtp(u, e) ? EmailChangeResult.OK : EmailChangeResult.SEND_FAILED;
+    }
+
+    @Override
+    public boolean resendEmailOtp(String username) {
+        User u = userDao.get(username);
+        if (u == null || u.getNewEmail() == null) return false;
+        return issueEmailOtp(u, u.getNewEmail());
+    }
+
+    private boolean issueEmailOtp(User u, String newEmail) {
+        String otp = OtpUtil.generate();
+        u.setNewEmail(newEmail);
+        u.setEmailCode(otp);
+        u.setEmailExpired(new Date(System.currentTimeMillis() + OTP_LIFETIME_MS));
+        u.setEmailAttempts(0);
+        userDao.update(u);
+
+        String body = "Xin chào " + u.getFullName() + ",\n\n"
+                + "Mã OTP xác nhận đổi email của bạn là: " + otp + "\n"
+                + "Mã có hiệu lực trong 5 phút. Không chia sẻ mã này cho bất kỳ ai.\n\n"
+                + "Nếu bạn không yêu cầu đổi email, hãy bỏ qua email này.";
+        return EmailUtil.send(newEmail, "Xác nhận email mới", body);
+    }
+
+    @Override
+    public OtpResult confirmEmailChange(String username, String otp) {
+        User u = userDao.get(username);
+        if (u == null) return OtpResult.NOT_FOUND;
+
+        if (u.getNewEmail() == null || u.getEmailCode() == null || u.getEmailExpired() == null
+                || new Date().after(u.getEmailExpired())) {
+            return OtpResult.EXPIRED;
+        }
+        if (u.getEmailAttempts() >= MAX_RESET_ATTEMPTS) {
+            return OtpResult.LOCKED;
+        }
+        if (!sameText(u.getEmailCode(), otp)) {
+            u.setEmailAttempts(u.getEmailAttempts() + 1);
+            userDao.update(u);
+            return OtpResult.INVALID;
+        }
+
+        User other = userDao.getByEmail(u.getNewEmail());
+        if (other != null && other.getId() != u.getId()) {
+            clearPendingEmail(u);
+            userDao.update(u);
+            return OtpResult.CONFLICT;
+        }
+
+        String oldEmail = u.getEmail();
+        String newEmail = u.getNewEmail();
+        u.setEmail(newEmail);
+        clearPendingEmail(u);
+        userDao.update(u);
+
+        if (oldEmail != null && !oldEmail.equalsIgnoreCase(newEmail)) {
+            EmailUtil.send(oldEmail, "Email tài khoản đã được thay đổi",
+                    "Email của tài khoản " + u.getUserName() + " vừa được đổi sang " + newEmail + ".\n"
+                    + "Nếu không phải bạn thực hiện, hãy đặt lại mật khẩu ngay.");
+        }
+        return OtpResult.OK;
+    }
+
+    @Override
+    public void cancelEmailChange(String username) {
+        User u = userDao.get(username);
+        if (u != null && u.getNewEmail() != null) {
+            clearPendingEmail(u);
+            userDao.update(u);
+        }
+    }
+
+    private void clearPendingEmail(User u) {
+        u.setNewEmail(null);
+        u.setEmailCode(null);
+        u.setEmailExpired(null);
+        u.setEmailAttempts(0);
     }
 }

@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import vn.iotstar.util.WebUtil;
 
-@WebFilter(urlPatterns = { "/video", "/video/*" })
+@WebFilter(urlPatterns = { "/video", "/video/*", "/profile", "/profile/*" })
 public class AuthFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)

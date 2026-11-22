@@ -74,6 +74,11 @@ public class UserDaoImpl implements UserDao {
         return count("phone", phone) > 0;
     }
 
+    @Override
+    public User getByPhone(String phone) {
+        return findOne("phone", phone);
+    }
+
     private User findOne(String field, String value) {
         if (value == null) return null;
         EntityManager em = JPAConfig.getEntityManager();

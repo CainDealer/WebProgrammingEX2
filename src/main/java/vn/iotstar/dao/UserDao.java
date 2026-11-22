@@ -6,6 +6,7 @@ public interface UserDao {
     User get(String username);
     User getByEmail(String email);
     User getByRememberToken(String hashedToken);
+    User getByPhone(String phone);
 
     void insert(User user);
     void update(User user);

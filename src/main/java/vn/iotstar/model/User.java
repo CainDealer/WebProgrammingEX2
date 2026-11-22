@@ -76,6 +76,22 @@ public class User implements Serializable {
     @OneToMany(mappedBy = "user")
     private List<Video> videos = new ArrayList<>();
 
+    @Column(name = "newemail")
+    private String newEmail;
+
+    @Column(name = "emailcode")
+    private String emailCode;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "emailexpired")
+    private Date emailExpired;
+
+    @Column(name = "emailattempts")
+    private int emailAttempts;
+
+    @Column(name = "avatarpublicid")
+    private String avatarPublicId;
+
     public User() {}
 
     public User(String email, String userName, String fullName, String passWord,
@@ -140,4 +156,19 @@ public class User implements Serializable {
 
     public List<Video> getVideos() { return videos; }
     public void setVideos(List<Video> videos) { this.videos = videos; }
+
+    public String getNewEmail() { return newEmail; }
+    public void setNewEmail(String newEmail) { this.newEmail = newEmail; }
+
+    public String getEmailCode() { return emailCode; }
+    public void setEmailCode(String emailCode) { this.emailCode = emailCode; }
+
+    public Date getEmailExpired() { return emailExpired; }
+    public void setEmailExpired(Date emailExpired) { this.emailExpired = emailExpired; }
+
+    public int getEmailAttempts() { return emailAttempts; }
+    public void setEmailAttempts(int emailAttempts) { this.emailAttempts = emailAttempts; }
+
+    public String getAvatarPublicId() { return avatarPublicId; }
+    public void setAvatarPublicId(String avatarPublicId) { this.avatarPublicId = avatarPublicId; }
 }

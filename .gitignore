@@ -225,3 +225,5 @@ target/
 .project
 .settings/
 *.war
+
+src/main/resources/cloudinary.properties

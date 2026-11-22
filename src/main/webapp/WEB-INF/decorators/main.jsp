@@ -36,10 +36,17 @@
             </c:when>
             <c:otherwise>
               <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                  <i class="bi bi-person-circle"></i> <c:out value="${sessionScope.account.fullName}"/>
+                <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" data-bs-toggle="dropdown">
+                  <c:choose>
+                    <c:when test="${not empty sessionScope.account.avatar}">
+                      <img class="rounded-circle avatar-sm" src="<c:out value='${sessionScope.account.avatar}'/>" alt="">
+                    </c:when>
+                    <c:otherwise><i class="bi bi-person-circle"></i></c:otherwise>
+                  </c:choose>
+                  <c:out value="${sessionScope.account.fullName}"/>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="${ctx}/profile">Hồ sơ cá nhân</a></li>
                   <li><a class="dropdown-item" href="${ctx}/video">Video của tôi</a></li>
                   <li><a class="dropdown-item" href="${ctx}/video/add">Thêm video</a></li>
                   <li><hr class="dropdown-divider"></li>
